@@ -1,0 +1,14 @@
+
+Train_name = 'UCID_proposed9_294_MB1_05_tr';
+
+Test_name = 'UCID_proposed9_294_MB1_05_te';
+
+for i = 1:10
+    
+    trainname = strcat(Train_name,num2char(i));
+    fid = fopen(trainname,'r');
+    in = fscanf(fid,'%f');
+    
+    fclose(fid);
+    
+end

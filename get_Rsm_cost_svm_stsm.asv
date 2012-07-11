@@ -1,0 +1,117 @@
+function [ Rsm ] = get_Rsm_cost_svm_stsm( C,Q,DS_train,DS_train_label,result_label,model,decision_values,gen_DS )
+
+[N,fea] = size(DS_train);
+
+numclass = max(DS_train_label);
+
+A = 2.0;
+cigma = 0.025;
+B = 1 ;
+kerci = B * sqrt(log(cigma) / (-2*N)) ;
+
+fid = fopen('cost_stsm.txt','a+');
+
+    [N,fea] = size(DS_train);
+    K = size(C,1);
+    table = zeros(1,N);
+    flag = zeros(1,N); % mark, if table(x) has been calculate
+    
+    function I = get_stsm(x,result_x)
+        
+        if flag(1,x) == 1
+            I = table(1,x);
+            return;
+        end
+        
+        NH = 100;   %generate NH points around x
+        
+        %gen_DS = gen_hset_new(fea,Q,0.01);
+        DS_ran = zeros(NH,fea);
+        for i = 1:NH
+            for i2 = 1:fea
+                DS_ran(i,i2) = DS_train(x,i2) + gen_DS(i,i2);
+            end
+        end
+        
+        %DS_ran_label = ones(100,1);
+        
+        %DS_ran_result = rbfnn_result(W,center_U,width_V,center_number,output_number,DS_ran);
+        % [ans_label, acc, DS_ran_result ] = svmpredict(DS_ran_label,DS_ran, model);
+        
+        try
+        
+        [ans_label , DS_ran_result] = simlssvm(model,DS_ran);
+        
+        %I = mean(sum((DS_ran_result - repmat(result_x,NH,1)).^2,1)/NH);
+        I=0;
+        for i = 1:NH
+            I = I + C(result_x,ans_label(i,1));
+        end
+        I = I*1.0/NH;
+        flag(1,x)=1;
+        table(1,x)=I;
+        
+        catch ME
+            fprintf('stop\n');
+        end
+        
+    end
+
+    if numclass>2
+        output = decimal2vector(DS_train_label',K) ;   % convert output_F to binary vector, column vector
+        output = output';
+    else
+        output = decimal2vector2(DS_train_label') ;
+        output = output';
+    end
+    
+%     decision_values = decimal2vector(result_label',K); % Temp for REMP
+%     decision_values = decision_values';
+
+     Rsm = 0;
+     
+     for h = 1:K
+         for j = 1:K
+             
+             if h==j
+                 continue;
+             end;
+             
+             Trcost = 0;
+             % for the sample of class h, it was classify to j, with Chj
+             for s = 1:N
+                 if DS_train_label(s,1)==h && result_label(s,1)==j
+                     
+                     %mse = (decision_values(s,:)-output(s,:)).^2;
+                     Tr = C(h,j);
+                     
+                     %stsm = get_stsm(s,h);
+                     
+                     %fprintf(fid,'%d %.2f\n',mse,stsm);
+                     
+                     %Trsm = Trsm + (sqrt(mse) + sqrt(stsm)+A)^2 + kerci;
+                     
+                 end
+             end
+             
+             %Rsm = Rsm + C(h,j) * ((sqrt(mean(mse)) + sqrt(mean(stsm))+A)^2 + kerci);
+             %Rsm = Rsm + Trsm;
+             
+         end
+     end
+     
+     
+     
+%         for s = 1:N    % sum all of the RSM
+%                      
+%                      mse = (decision_values(s,:)-output(s,:)).^2;
+%                      
+%                      stsm = get_stsm(s,decision_values(s,:));
+%                      
+%                      Rsm = Rsm + (sqrt(mean(mse)) + sqrt(mean(stsm))+A)^2;
+%                      
+%         end
+    
+fclose(fid);
+end
+

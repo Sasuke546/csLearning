@@ -1,0 +1,69 @@
+function [ y ] = ga_cost_svm_lgem_matlab_fitness_ckt( chr,C,Q,t_l,t,model,gen_DS,type )
+
+% global checktable
+% global table
+% global ta_acc
+
+if bit2num(chr)==0  % no bits
+    y = 999999999;
+    return;
+end
+
+% if checktable(1,bit2num(chr))==1
+%     y = table(1,bit2num(chr));
+%     writef( y,ta_acc(1,bit2num(chr)) );
+%     return;
+% end
+
+n = 1;
+
+numFea = size(find(chr==1),2);
+
+DS_train = zeros(numFea,size(t,2));
+
+for i = 1:size(chr,2)
+    if chr(1,i) == 1
+        DS_train(n,:) = t(i,:);
+        n = n + 1;
+    end
+end
+
+if n == 1
+    y = 999999999;
+else
+%     model =  svmtrain(t_l', DS_train');
+%     [ans_label, acc, dicision_value ] = svmpredict(t_l',DS_train', model);
+    model2 = initlssvm(DS_train',t_l','classification',[],[],'RBF_kernel');
+%    model2 = tunelssvm(model2,'simplex','crossvalidatelssvm',{10,'misclass'},'code_OneVsAll');
+    model2.gam = model.gam;
+    model2.kernel_pars = model.kernel_pars;
+%     model2.codetype = 'code_OneVsOne';
+%     model2.code = 'changed';
+    model2 = trainlssvm(model2);
+    [ans_label,dicision_value] = simlssvm(model2,DS_train');
+    
+    if max(t_l)>2    % if class is 2 , the decision vecotr only has 1 value. (-1 or 1)
+        [ans,ans_label] = max(dicision_value,[],2);
+    end
+    
+    %acc = checkacc(ans_label,t_l');
+    
+    if type==1
+        y = get_Rsm_cost_svm(C,Q,DS_train',t_l',ans_label,model2,dicision_value,gen_DS);
+    else
+        y = get_Rsm_cost_svm_stsm(C,Q,DS_train',t_l',ans_label,model2,dicision_value,gen_DS);
+    end
+    
+end
+
+
+% checktable(1,bit2num(chr))=1;
+% table(1,bit2num(chr)) = y;
+% ta_acc(1,bit2num(chr)) = acc;
+% 
+% writef( y , acc );
+
+
+
+end
+

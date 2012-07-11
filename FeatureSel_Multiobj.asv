@@ -1,0 +1,7 @@
+function [ y ] = FeatureSel_Multiobj( bit )
+
+    y = zeros(1,2
+
+
+end
+
